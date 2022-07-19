@@ -1,3 +1,7 @@
 iWorkParser
 tools/
 vcpkg_installed/
+CMakeFiles/
+Makefile
+CmakeCache.txt
+cmake_install.cmake
