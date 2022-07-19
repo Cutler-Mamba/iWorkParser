@@ -88,31 +88,19 @@ int main(void)
         return 0;
     }
 
-
-
-
-#if 0
-    size_t proto_len = 0;
-    size_t offset = decode_varint(output.c_str(), proto_len);
-    int chunk_len = get_chunk_len(proto_len);
-
-    std::cout << "proto_len:" << proto_len << " offset:" << offset << " chunk_len:" << chunk_len << std::endl;
-#endif
-
     ssize_t parse_index = 0;
     while(true)
     {
         size_t proto_len = 0;
         size_t offset = decode_varint(output.c_str() + parse_index, proto_len);
         int chunk_len = get_chunk_len(proto_len);
-        std::cout << "proto_len:" << proto_len << " offset:" << offset 
-            << " chunk_len:" << chunk_len << " parse_index:" << parse_index << std::endl;
+        //std::cout << "proto_len:" << proto_len << " offset:" << offset << " chunk_len:" << chunk_len << " parse_index:" << parse_index << std::endl;
 
 
         ArchiveInfo info;
         if (info.ParseFromArray((void*)(output.c_str()+offset + parse_index), proto_len))
         {
-            std::cout << "parse succ" << std::endl;
+            //std::cout << "parse succ" << std::endl;
             parse_index += offset;
             parse_index += proto_len;
 
@@ -122,14 +110,16 @@ int main(void)
                for(int i = 0; i < info.message_infos_size(); i++)
                {
                     MessageInfo msg_info = info.message_infos(i);
-                    std::cout << "msg info length:" << msg_info.length() << std::endl;
+                    std::cout << "get msg type:" << msg_info.type() << std::endl;
+
+
                     parse_index += msg_info.length();
                }
             }
 
             if (parse_index >= output.size())
             {
-                std::cout << "parse end . index:" << parse_index << std::endl;
+                std::cout << "parse end. index:" << parse_index << std::endl;
                 break;
             }
         }

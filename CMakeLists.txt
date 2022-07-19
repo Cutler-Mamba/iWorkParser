@@ -17,10 +17,13 @@ list(
 	APPEND 
 	sources
 	${CMAKE_CURRENT_SOURCE_DIR}/src/iworks_parser.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/TSPArchiveMessages.pb.cc
 )
 
+file(GLOB_RECURSE protobuf_src proto/*.cc)
+list(APPEND sources ${protobuf_src})
+
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/include)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/proto)
 #INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/include/snappy)
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 
