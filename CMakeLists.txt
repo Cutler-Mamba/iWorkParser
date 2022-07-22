@@ -17,6 +17,7 @@ list(
 	APPEND 
 	sources
 	${CMAKE_CURRENT_SOURCE_DIR}/src/iworks_parser.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/util.cpp
 )
 
 file(GLOB_RECURSE protobuf_src proto/*.cc)

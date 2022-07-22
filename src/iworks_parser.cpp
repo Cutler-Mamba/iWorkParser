@@ -4,9 +4,42 @@
 #include <unistd.h>
 #include <sys/stat.h>  
 #include "TSPArchiveMessages.pb.h"
+#include "TSWPArchives.pb.h"
+#include "TPArchives.pb.h"
 #include <fstream>
+#include "util.hpp"
 using namespace std;
 using namespace TSP;
+
+// key:identifyer value: pointer to protobuf message
+std::map<uint64_t, google::protobuf::Message*> valueMap;
+
+google::protobuf::Message* getPropTypeMessage(int type)
+{
+    switch(type)
+    {
+        case 2051:
+        {
+            return new TSWP::TOCSettingsArchive();
+            break;
+        }
+        case 10000:
+        {
+            return new TP::DocumentArchive();
+            break;
+        }
+        case 2001:
+        case 2005:
+        {
+            return new TSWP::StorageArchive();
+        }
+        default:
+        {
+            break;
+        }
+    }
+    return nullptr;
+}
 
 size_t decode_entire_length(void* buf)
 {
@@ -110,10 +143,30 @@ int main(void)
                for(int i = 0; i < info.message_infos_size(); i++)
                {
                     MessageInfo msg_info = info.message_infos(i);
-                    std::cout << "get msg type:" << msg_info.type() << std::endl;
-
-
+                    size_t tmp_index = parse_index;
                     parse_index += msg_info.length();
+                    //std::cout << "get msg type:" << msg_info.type() << std::endl;
+
+                    google::protobuf::Message* bMessage = getPropTypeMessage(msg_info.type());
+                    if (nullptr == bMessage)
+                    {
+                        continue;
+                    }
+
+                    if (msg_info.type() == 2001 || msg_info.type() == 2005)
+                    {
+                        TSWP::StorageArchive* q = (TSWP::StorageArchive*)bMessage;
+                        //std::cout << "storage kind:" << q->kind() << std::endl;
+                    }
+                    
+
+                    bMessage->ParseFromArray((void*)(output.c_str() + tmp_index), msg_info.length());
+
+                    valueMap[info.identifier()] = bMessage;
+
+                    //std::cout << "add id:" << info.identifier() << " value type:" << bMessage->GetTypeName() << std::endl;
+
+                    //std::cout << "Content:" << bMessage->DebugString() << std::endl;                    
                }
             }
 
@@ -130,6 +183,84 @@ int main(void)
         }
          
     }
+
+    google::protobuf::Message* bMessage = valueMap[1];
+    if (nullptr == bMessage)
+    {
+        free(szBuffer);
+        close(fd);
+        return 0;
+    }
+
+    TP::DocumentArchive* newMessage = (TP::DocumentArchive*) bMessage;
+    std::cout << "see id:" << newMessage->body_storage().identifier() << std::endl;
+
+    TSWP::StorageArchive* textMessage = (TSWP::StorageArchive*)valueMap[newMessage->body_storage().identifier()];
+    if (nullptr == textMessage)
+    {
+        free(szBuffer);
+        close(fd);
+        return 0;
+    }
+
+    
+    if (textMessage->text_size() == 0)
+    {
+        free(szBuffer);
+        close(fd);
+        return 0;
+    }
+
+    std::string text = textMessage->text(0);
+
+    std::wstring wtext = C::UTF82UniStr(text);
+    std::cout << "get it. len:" << wtext.size() << std::endl;
+    std::string nnn = C::Uni2UTF8Str(wtext);
+    std::cout << nnn << std::endl;
+
+    for(int i = 0; i < textMessage->table_para_style().entries_size(); i++)
+    {
+        uint32_t pos = textMessage->table_para_style().entries(i).character_index();
+        uint32_t end = wtext.size();
+
+        if(i < textMessage->table_para_style().entries_size() -1)
+        {
+            end = textMessage->table_para_style().entries(i+1).character_index();
+        }
+        std::cout << "pos:" << pos << " end:" << end << std::endl;
+        std::wstring q = wtext.substr(pos, end - pos);
+        
+        std::cout << C::Uni2UTF8Str(q) << std::endl;
+
+        for (int j = 0; j < textMessage->table_char_style().entries_size(); j++)
+        {
+            std::cout << "y" << std::endl;
+            uint32_t cs = textMessage->table_char_style().entries(j).character_index();
+            if (cs < pos) 
+            {
+				continue;
+			}
+			if (cs >= end) 
+            {
+				break;
+		    }
+
+            uint32_t ce = text.size();
+            if(j < textMessage->table_char_style().entries_size() -1)
+            {
+                ce = textMessage->table_char_style().entries(j + 1).character_index();
+            }
+
+            if (ce > end)
+            {
+                ce = end;
+            }  
+        }
+        
+    }
+    
+
+    
     
 
   
